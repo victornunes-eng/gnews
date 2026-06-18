@@ -9,6 +9,10 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -103,6 +107,22 @@ public class ArticleService {
                 .toList();
 
         return new ArticlesResponse(total.intValue(), resultDtos);
+    }
+
+    /**
+     * Busca uma prévia (raw HTML/JSON) a partir da URL de uma fonte externa.
+     * Usado no fluxo de "adicionar artigo por link", onde o editor cola a URL
+     * da matéria e o backend faz o fetch para pré-popular título e descrição.
+     */
+    public String fetchSourcePreview(String sourceUrl) {
+        try {
+            URL url = new URL(sourceUrl);
+            try (InputStream in = url.openStream()) {
+                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Falha ao buscar prévia da fonte: " + e.getMessage(), e);
+        }
     }
 
     private ArticlesResponse fetchAndMap(Predicate<Article> predicate, Comparator<Article> comparator, int page,
